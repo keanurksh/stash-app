@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
+/* Vendored from shadcn/tailwind.css (shadcn CLI preset: keyframes, data-*
+   variants, scroll-fade/shimmer utilities). Kept local so production builds
+   never depend on the shadcn CLI package. */
+@import "./shadcn-preset.css";
 
 @custom-variant dark (&:is(.dark *));
 
