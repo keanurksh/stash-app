@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# self-hosted tesseract assets (46MB binaries, regenerated via postinstall)
+public/tesseract/
+
 # production
 /build
 
