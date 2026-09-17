@@ -22,7 +22,7 @@ const SPLIT_ROWS = [
 export function Hero() {
   return (
     <section className="relative mx-auto max-w-7xl overflow-hidden px-4 pt-12 pb-20 md:px-8 md:py-24">
-      <div className="pointer-events-none absolute -top-24 left-1/2 h-[350px] w-[600px] -translate-x-1/2 rounded-full bg-[#00f076]/10 blur-[130px]" />
+      <div className="pointer-events-none absolute -top-24 left-1/2 h-[250px] w-[320px] -translate-x-1/2 rounded-full bg-[#00f076]/10 blur-[70px] md:h-[350px] md:w-[600px] md:blur-[130px]" />
 
       <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
         <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#3b4b3c]/30 bg-[#1c2021] px-3 py-1 font-space text-[10px] font-bold tracking-[0.06em] text-[#bacbb8] uppercase">

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LayoutDashboard, LogOut, Plus, ReceiptText, Sparkles, Target, User } from "lucide-react"
+import { LayoutDashboard, Loader2, LogOut, Plus, ReceiptText, Sparkles, Target, User } from "lucide-react"
 import { toast } from "sonner"
 
 import { PaywallModal } from "@/components/paywall/paywall-modal"
@@ -30,12 +30,17 @@ function ProfileSheet({
   user: DashboardUser
 }) {
   const [paywallOpen, setPaywallOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const { isPro, loading: planLoading } = usePlanStatus()
 
   const handleSignOut = async () => {
+    if (signingOut) return
+    setSigningOut(true)
     const supabase = createClient()
     await supabase.auth.signOut()
-    toast.success("Berhasil keluar")
+    toast.success("Berhasil keluar dari sistem.")
+    // Jeda sebentar agar toast terbaca, baru cabut dari dashboard
+    await new Promise((resolve) => setTimeout(resolve, 800))
     window.location.replace("/")
   }
 
@@ -86,10 +91,15 @@ function ProfileSheet({
             <button
               type="button"
               onClick={handleSignOut}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-400 transition hover:bg-rose-500/20 active:scale-[0.99]"
+              disabled={signingOut}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-400 transition hover:bg-rose-500/20 active:scale-[0.99] disabled:opacity-70"
             >
-              <LogOut className="size-4" />
-              Keluar
+              {signingOut ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <LogOut className="size-4" />
+              )}
+              {signingOut ? "Keluar..." : "Keluar"}
             </button>
           </div>
         </DrawerContent>

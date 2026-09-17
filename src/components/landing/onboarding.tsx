@@ -29,7 +29,7 @@ export function Onboarding() {
   return (
     <section
       id="onboarding"
-      className="relative border-y border-[#3b4b3c]/30 bg-[#181c1d]/40 py-20"
+      className="relative border-y border-[#3b4b3c]/30 bg-[#181c1d]/40 py-20 [content-visibility:auto] [contain-intrinsic-size:auto_700px]"
     >
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="mx-auto mb-16 max-w-3xl space-y-3 text-center">

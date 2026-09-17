@@ -32,7 +32,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isAdminRoute = pathname.startsWith("/admin")
   const isProtected = pathname.startsWith("/dashboard")
-  const isLoginPage = pathname === "/login"
+  const isAuthPage = pathname === "/login" || pathname === "/register"
 
   // Admin routes: hanya role 'admin' yang boleh lewat
   if (isAdminRoute) {
@@ -66,7 +66,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user && isLoginPage) {
+  if (user && isAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = "/dashboard"
     url.search = ""
@@ -77,5 +77,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/register"],
 }

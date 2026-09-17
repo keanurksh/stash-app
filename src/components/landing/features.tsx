@@ -4,7 +4,7 @@ export function Features() {
   return (
     <section
       id="features"
-      className="mx-auto max-w-7xl px-4 py-20 md:px-8 md:py-28"
+      className="mx-auto max-w-7xl px-4 py-20 [content-visibility:auto] [contain-intrinsic-size:auto_900px] md:px-8 md:py-28"
     >
       <div className="mx-auto mb-16 max-w-3xl space-y-3 text-center">
         <h2 className="font-space text-[26px] leading-8 font-bold tracking-[-0.01em] text-white md:text-[32px] md:leading-10 md:tracking-[-0.02em]">

@@ -18,7 +18,7 @@ export function SavingsSimulator() {
   return (
     <section
       id="calculator"
-      className="mx-auto max-w-7xl px-4 py-20 md:px-8 md:py-28"
+      className="mx-auto max-w-7xl px-4 py-20 [content-visibility:auto] [contain-intrinsic-size:auto_850px] md:px-8 md:py-28"
     >
       <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
         {/* Copy */}

@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { LogOut, Plus, Sparkles, Wallet } from "lucide-react"
+import { Loader2, LogOut, Plus, Sparkles, Wallet } from "lucide-react"
 import { toast } from "sonner"
 
 import { PaywallModal } from "@/components/paywall/paywall-modal"
+import { BrandLogo } from "@/components/brand-logo"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -26,13 +27,18 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ user, onAddClick }: DashboardHeaderProps) {
   const [paywallOpen, setPaywallOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const { isPro, loading: planLoading } = usePlanStatus()
 
   const handleSignOut = async () => {
+    if (signingOut) return
+    setSigningOut(true)
     const supabase = createClient()
     // Wipe local data immediately so nothing lingers in memory/DX after logout
     await supabase.auth.signOut()
-    toast.success("Berhasil keluar")
+    toast.success("Berhasil keluar dari sistem.")
+    // Jeda sebentar agar toast terbaca, baru cabut dari dashboard
+    await new Promise((resolve) => setTimeout(resolve, 800))
     // Hard navigation: guarantees dashboard data is dropped from view instantly
     window.location.replace("/")
   }
@@ -41,12 +47,15 @@ export function DashboardHeader({ user, onAddClick }: DashboardHeaderProps) {
     <header className="sticky top-0 z-40 hidden border-b border-[#1c2225]/80 bg-[#0b0f10]/90 backdrop-blur-md md:block">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#00b85a] to-[#00f076] text-[#070a0b] shadow-glow-mint">
-            <Wallet className="size-6" strokeWidth={2.2} />
-          </div>
-          <span className="font-space text-xl font-bold tracking-tight text-white">
-            Stash
-          </span>
+          <BrandLogo
+            defaultHref="/dashboard"
+            textClassName="text-white"
+            icon={
+              <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#00b85a] to-[#00f076] text-[#070a0b] shadow-glow-mint transition-transform duration-150 group-hover:scale-105">
+                <Wallet className="size-6" strokeWidth={2.2} />
+              </div>
+            }
+          />
           {planLoading ? (
             <span className="h-5 w-12 animate-pulse rounded-full bg-[#1c2225]" />
           ) : isPro ? (
@@ -135,9 +144,17 @@ export function DashboardHeader({ user, onAddClick }: DashboardHeaderProps) {
                   </>
                 ) : null}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
-                  <LogOut className="size-4" />
-                  Keluar
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                >
+                  {signingOut ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <LogOut className="size-4" />
+                  )}
+                  {signingOut ? "Keluar..." : "Keluar"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -59,6 +59,8 @@ interface TransactionDrawerProps {
   userId: string
   onSaved: () => void
   onWalletCreated?: () => void
+  /** Tab awal saat drawer dibuka (quick action Scan langsung ke tab OCR) */
+  initialTab?: "manual" | "ocr"
 }
 
 export function TransactionDrawer({
@@ -71,6 +73,7 @@ export function TransactionDrawer({
   userId,
   onSaved,
   onWalletCreated,
+  initialTab = "manual",
 }: TransactionDrawerProps) {
   return (
     <ResponsiveDialog
@@ -105,6 +108,7 @@ export function TransactionDrawer({
         categories={categories}
         wallets={wallets}
         userId={userId}
+        initialTab={initialTab}
         onDone={() => {
           onSaved()
           onOpenChange(false)
@@ -125,6 +129,7 @@ interface DrawerBodyProps {
   categories: Category[]
   wallets: Wallet[]
   userId: string
+  initialTab: "manual" | "ocr"
   onDone: () => void
   onWalletCreated?: () => void
 }
@@ -134,6 +139,7 @@ function ModalBody({
   categories,
   wallets,
   userId,
+  initialTab,
   onDone,
   onWalletCreated,
 }: DrawerBodyProps) {
@@ -152,7 +158,7 @@ function ModalBody({
   const [dateISO, setDateISO] = useState(editing?.date ?? todayISO())
   const [notes, setNotes] = useState(editing?.notes ?? "")
   const [saving, setSaving] = useState(false)
-  const [tab, setTab] = useState<"manual" | "ocr">("manual")
+  const [tab, setTab] = useState<"manual" | "ocr">(initialTab)
 
   const [ocrFile, setOcrFile] = useState<File | null>(null)
   const [ocrPreview, setOcrPreview] = useState<string | null>(null)

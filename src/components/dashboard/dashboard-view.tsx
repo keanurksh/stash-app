@@ -14,7 +14,11 @@ import {
   startOfYear,
 } from "date-fns"
 import { id as localeID } from "date-fns/locale"
+import { motion } from "framer-motion"
+import { Plus, ScanLine, Sparkles, Users } from "lucide-react"
 import { toast } from "sonner"
+
+import { PaywallModal } from "@/components/paywall/paywall-modal"
 
 import { CategoryBreakdown, type DonutDatum } from "@/components/dashboard/category-breakdown"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -30,7 +34,7 @@ import { TransactionList } from "@/components/transactions/transaction-list"
 import { WalletsStrip } from "@/components/wallets/wallets-strip"
 import { WishlistSection } from "@/components/wishlist/wishlist-section"
 import { createClient } from "@/lib/supabase/client"
-import { usePlanStatus } from "@/lib/plan-gate"
+import { canCreateWithinFreeLimit, usePlanStatus } from "@/lib/plan-gate"
 import type {
   BudgetCap,
   Category,
@@ -43,6 +47,15 @@ import type {
 } from "@/types"
 
 const now = new Date()
+
+/** Sapaan dinamis berdasarkan jam lokal pengguna (WIB-bebas, ikut device). */
+function getGreeting(date: Date = new Date()): string {
+  const hour = date.getHours()
+  if (hour >= 5 && hour < 12) return "Selamat Pagi"
+  if (hour >= 12 && hour < 15) return "Selamat Siang"
+  if (hour >= 15 && hour < 18) return "Selamat Sore"
+  return "Selamat Malam"
+}
 
 interface DashboardViewProps {
   user: DashboardUser
@@ -78,11 +91,14 @@ export function DashboardView({
   const [streak, setStreak] = useState(0)
   const [savingLevel, setSavingLevel] = useState("Bronze Saver")
   const [loading, setLoading] = useState(false)
-  const { isPro } = usePlanStatus()
+  const { isPro, loading: planLoading } = usePlanStatus()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [formNonce, setFormNonce] = useState(0)
+  const [drawerTab, setDrawerTab] = useState<"manual" | "ocr">("manual")
+  const [splitBillOpen, setSplitBillOpen] = useState(false)
+  const [paywallOpen, setPaywallOpen] = useState(false)
 
   const loadPeriod = useCallback(
     async (mode: "month" | "year", periodMonth: number, periodYear: number) => {
@@ -189,12 +205,30 @@ export function DashboardView({
 
   const handleOpenAdd = () => {
     setEditing(null)
+    setDrawerTab("manual")
     setFormNonce((n) => n + 1)
     setDrawerOpen(true)
   }
 
+  const handleOpenScan = () => {
+    setEditing(null)
+    setDrawerTab("ocr")
+    setFormNonce((n) => n + 1)
+    setDrawerOpen(true)
+  }
+
+  const handleOpenSplitBill = () => {
+    const activeCount = splitBills.filter((b) => b.status === "active").length
+    if (canCreateWithinFreeLimit(isPro, activeCount)) {
+      setSplitBillOpen(true)
+    } else {
+      setPaywallOpen(true)
+    }
+  }
+
   const handleOpenEdit = (transaction: Transaction) => {
     setEditing(transaction)
+    setDrawerTab("manual")
     setFormNonce((n) => n + 1)
     setDrawerOpen(true)
   }
@@ -293,27 +327,86 @@ export function DashboardView({
     <div className="flex min-h-screen flex-col overflow-x-clip bg-[#0b0f10]">
       <DashboardHeader user={user} onAddClick={handleOpenAdd} />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 overflow-x-clip px-4 pt-8 pb-28 sm:px-6 md:pb-8 lg:px-8">
-        <section id="overview" className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <h1 className="font-space text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              Ringkasan Keuangan
-            </h1>
-            <p className="mt-1 flex items-center gap-2 text-sm text-slate-400">
-              <span>Periode {periodLabel}</span>
-              <span className="inline-block size-1 rounded-full bg-slate-500" />
-              <span className="rounded border border-[#00f076]/20 bg-[#00f076]/8 px-2 py-0.5 text-xs font-medium text-[#00f076]">
-                Sinkron Otomatis Aktif
-              </span>
-            </p>
+      {/* Entrance halus setelah data server selesai difetch (komponen ini
+          hanya ter-render begitu page server selesai memuat data) */}
+      <motion.main
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="mx-auto w-full max-w-7xl flex-1 space-y-8 overflow-x-clip px-4 pt-8 pb-28 sm:px-6 md:pb-8 lg:px-8"
+      >
+        <section id="overview" className="space-y-4">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <h1 className="font-space text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                {getGreeting()}, {(user.name || "").split(" ")[0] || "Kamu"}
+              </h1>
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-400">
+                <span>Periode {periodLabel}</span>
+                <span className="inline-block size-1 rounded-full bg-slate-500" />
+                <span className="rounded border border-[#00f076]/20 bg-[#00f076]/8 px-2 py-0.5 text-xs font-medium text-[#00f076]">
+                  Sinkron Otomatis Aktif
+                </span>
+                {planLoading ? (
+                  <span className="h-5 w-16 animate-pulse rounded-full bg-[#1c2225]" />
+                ) : isPro ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#00f076]/30 bg-[#00f076]/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-[#00f076]">
+                    <span className="size-1.5 animate-pulse rounded-full bg-[#00f076]" />
+                    PRO MEMBER
+                  </span>
+                ) : (
+                  <>
+                    <span className="rounded-full border border-slate-600 bg-slate-700/40 px-2 py-0.5 text-[10px] font-bold tracking-wider text-slate-300">
+                      FREE TIER
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPaywallOpen(true)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#00f076] transition hover:underline"
+                    >
+                      <Sparkles className="size-3.5" />
+                      Upgrade ke Pro
+                    </button>
+                  </>
+                )}
+              </p>
+            </div>
+            <PeriodNavigation
+              viewMode={viewMode}
+              month={month}
+              year={year}
+              onViewModeChange={handleViewModeChange}
+              onPeriodChange={handlePeriodChange}
+            />
           </div>
-          <PeriodNavigation
-            viewMode={viewMode}
-            month={month}
-            year={year}
-            onViewModeChange={handleViewModeChange}
-            onPeriodChange={handlePeriodChange}
-          />
+
+          {/* Quick Action Bar */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 rounded-xl bg-[#00f076] px-4 py-2.5 text-sm font-bold text-[#070a0b] shadow-glow-mint transition hover:bg-[#00dc6c] active:scale-[0.99]"
+            >
+              <Plus className="size-4" strokeWidth={2.5} />
+              Catat Transaksi
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenScan}
+              className="flex items-center gap-2 rounded-xl border border-[#1c2225] bg-[#101415] px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-[#00f076]/40 hover:text-white active:scale-[0.99]"
+            >
+              <ScanLine className="size-4 text-[#00f076]" />
+              Scan Mutasi OCR
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenSplitBill}
+              className="flex items-center gap-2 rounded-xl border border-[#1c2225] bg-[#101415] px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-[#00f076]/40 hover:text-white active:scale-[0.99]"
+            >
+              <Users className="size-4 text-[#00f076]" />
+              Split Bill Baru
+            </button>
+          </div>
         </section>
 
         <SummaryCards
@@ -354,6 +447,8 @@ export function DashboardView({
           bills={splitBills}
           items={splitBillItems}
           userId={user.id}
+          createOpen={splitBillOpen}
+          onCreateOpenChange={setSplitBillOpen}
           onChanged={() => {
             refreshSplitBills()
             refreshSplitBillItems()
@@ -395,7 +490,7 @@ export function DashboardView({
             onDelete={handleDelete}
           />
         </div>
-      </main>
+      </motion.main>
 
       <MobileBottomNav user={user} onAddClick={handleOpenAdd} />
 
@@ -408,8 +503,11 @@ export function DashboardView({
         editing={editing}
         formKey={formNonce}
         userId={user.id}
+        initialTab={drawerTab}
         onSaved={refresh}
       />
+
+      <PaywallModal open={paywallOpen} onOpenChange={setPaywallOpen} />
     </div>
   )
 }

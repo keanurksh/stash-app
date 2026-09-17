@@ -3,6 +3,7 @@ import { ShieldCheck } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
+import { BrandLogo } from "@/components/brand-logo"
 import { createClient } from "@/lib/supabase/server"
 
 export const metadata = {
@@ -39,17 +40,20 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       <header className="sticky top-0 z-40 border-b border-[#1c2225]/80 bg-[#0b0f10]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="Stash Admin"
-              width={32}
-              height={32}
-              className="size-8 rounded-lg"
-              priority
+            <BrandLogo
+              defaultHref="/dashboard"
+              textClassName="text-white"
+              icon={
+                <Image
+                  src="/logo.png"
+                  alt="Stash"
+                  width={32}
+                  height={32}
+                  className="size-8 rounded-lg transition-transform duration-150 group-hover:scale-105"
+                  priority
+                />
+              }
             />
-            <span className="font-space text-xl font-bold tracking-tight text-white">
-              Stash
-            </span>
             <span className="flex items-center gap-1 rounded-full border border-[#00f076]/30 bg-[#00f076]/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-[#00f076]">
               <ShieldCheck className="size-3" />
               ADMIN

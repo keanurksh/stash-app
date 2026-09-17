@@ -4,7 +4,7 @@ import { GoogleIcon } from "@/components/landing/google-icon"
 
 export function BottomCta() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
+    <section className="mx-auto max-w-7xl px-4 py-20 [content-visibility:auto] [contain-intrinsic-size:auto_550px] md:px-8">
       <div className="relative overflow-hidden rounded-3xl border border-[#00f076]/40 bg-[#181c1d] p-8 text-center sm:p-14">
         <div className="pointer-events-none absolute -top-24 left-1/2 size-96 -translate-x-1/2 rounded-full bg-[#00f076]/20 blur-3xl" />
         <div className="relative z-10 mx-auto max-w-3xl space-y-6">

@@ -135,7 +135,7 @@ export function Pricing() {
     <section
       id="pricing"
       ref={pricingRef}
-      className="mx-auto max-w-7xl px-4 py-20 md:px-8 md:py-28"
+      className="mx-auto max-w-7xl px-4 py-20 [content-visibility:auto] [contain-intrinsic-size:auto_1100px] md:px-8 md:py-28"
     >
       <article className="mb-10 max-w-2xl space-y-4">
         <span className="inline-block rounded-full border border-[#00f076]/20 bg-[#00f076]/10 px-3 py-1 font-space text-xs font-semibold tracking-[0.04em] text-[#b2ffbe]">

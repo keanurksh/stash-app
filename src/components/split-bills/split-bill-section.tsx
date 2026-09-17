@@ -25,6 +25,9 @@ interface SplitBillSectionProps {
   items: SplitBillItem[]
   userId: string
   onChanged: () => void
+  /** Kontrol dialog create dari luar (mis. Quick Action Bar); default uncontrolled */
+  createOpen?: boolean
+  onCreateOpenChange?: (open: boolean) => void
 }
 
 interface DraftItem {
@@ -37,8 +40,12 @@ export function SplitBillSection({
   items,
   userId,
   onChanged,
+  createOpen: createOpenProp,
+  onCreateOpenChange,
 }: SplitBillSectionProps) {
-  const [createOpen, setCreateOpen] = useState(false)
+  const [createOpenInternal, setCreateOpenInternal] = useState(false)
+  const createOpen = createOpenProp ?? createOpenInternal
+  const setCreateOpen = onCreateOpenChange ?? setCreateOpenInternal
   const [paywallOpen, setPaywallOpen] = useState(false)
   const { isPro } = usePlanStatus()
 

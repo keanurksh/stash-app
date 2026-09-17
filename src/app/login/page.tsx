@@ -1,24 +1,46 @@
 "use client"
 
 import { Suspense, useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
-import { ArrowLeft, Eye, ShieldCheck } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-import { GoogleIcon } from "@/components/landing/google-icon"
+import { AuthShell } from "@/components/auth/auth-shell"
+import { GoogleButton } from "@/components/auth/google-button"
+import { PasswordInput } from "@/components/auth/password-input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { writeRememberMeFlag } from "@/lib/supabase/cookies"
+
+const inputClass =
+  "rounded-xl border border-[#1c2225] bg-[#0b0f10] text-slate-200 transition placeholder:text-slate-600 focus:border-[#00f076] focus:ring-1 focus:ring-[#00f076] focus:outline-none"
 
 function LoginContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [rememberMe, setRememberMe] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [forgotOpen, setForgotOpen] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState("")
+  const [forgotLoading, setForgotLoading] = useState(false)
+  const [forgotSent, setForgotSent] = useState(false)
+
+  const next = searchParams.get("next") ?? "/dashboard"
 
   const handleGoogleLogin = async () => {
-    setLoading(true)
+    setGoogleLoading(true)
     const { createClient } = await import("@/lib/supabase/client")
     const supabase = createClient()
-    const next = searchParams.get("next") ?? "/dashboard"
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -26,151 +48,192 @@ function LoginContent() {
       },
     })
     if (error) {
-      toast.error("Gagal memulai login", { description: error.message })
-      setLoading(false)
+      toast.error("Failed to start login", { description: error.message })
+      setGoogleLoading(false)
     }
   }
 
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.trim() || !password) {
+      toast.error("Email and password are required")
+      return
+    }
+    setLoading(true)
+    const { createClient } = await import("@/lib/supabase/client")
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
+    if (error) {
+      toast.error("Sign in failed", { description: error.message })
+      setLoading(false)
+      return
+    }
+    writeRememberMeFlag(rememberMe)
+    toast.success("Welcome back")
+    router.replace(next)
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!forgotEmail.trim()) {
+      toast.error("Please enter your email address")
+      return
+    }
+    setForgotLoading(true)
+    const { createClient } = await import("@/lib/supabase/client")
+    const supabase = createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      forgotEmail.trim(),
+      { redirectTo: `${window.location.origin}/auth/reset-password` }
+    )
+    setForgotLoading(false)
+    if (error) {
+      toast.error("Failed to send reset link", { description: error.message })
+      return
+    }
+    setForgotSent(true)
+  }
+
   return (
-    <div
-      className="flex min-h-screen flex-col justify-between bg-[#0c1012] font-space text-zinc-100 antialiased selection:bg-[#00f076] selection:text-black"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle at 50% 0%, rgba(0, 240, 118, 0.05) 0%, transparent 60%), radial-gradient(circle at 85% 90%, rgba(0, 240, 118, 0.02) 0%, transparent 40%)",
-      }}
-    >
-      {/* Top bar */}
-      <header className="z-10 flex w-full items-center justify-between px-6 py-5 sm:px-10">
-        <Link
-          href="/"
-          aria-label="Kembali ke Beranda"
-          className="group inline-flex items-center gap-2 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-white"
+    <AuthShell>
+      <div className="mb-6">
+        <h1 className="font-space text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          Welcome Back
+        </h1>
+        <p className="mt-1.5 font-jakarta text-sm text-zinc-400">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-[#00f076] transition-colors hover:text-[#b2ffbe]"
+          >
+            Sign up
+          </Link>
+        </p>
+      </div>
+
+      <form onSubmit={handleSignIn} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-xs font-medium text-slate-300">
+            Email Address
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+            className={inputClass}
+          />
+        </div>
+
+        <PasswordInput
+          id="password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+        />
+
+        <div className="flex items-center justify-between pt-0.5">
+          <label
+            htmlFor="remember-me"
+            className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400 select-none"
+          >
+            <input
+              id="remember-me"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="size-4 cursor-pointer rounded accent-[#00f076]"
+            />
+            Remember me
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              setForgotEmail(email)
+              setForgotSent(false)
+              setForgotOpen(true)
+            }}
+            className="text-xs font-medium text-[#00f076] transition-colors hover:text-[#b2ffbe]"
+          >
+            Forgot password?
+          </button>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00f076] px-4 py-3 text-sm font-bold text-[#070a0b] shadow-glow-mint transition hover:bg-[#00dc6c] active:scale-[0.99] disabled:pointer-events-none disabled:opacity-70"
         >
-          <ArrowLeft className="size-4 text-zinc-500 transition-all duration-150 group-hover:-translate-x-0.5 group-hover:text-[#00f076]" />
-          <span>Kembali ke Beranda</span>
-        </Link>
-        <div className="hidden items-center gap-2 rounded-full border border-[#283136] bg-[#20272b]/70 px-2.5 py-1 text-[11px] text-zinc-400 sm:flex">
-          <span className="size-1.5 animate-pulse rounded-full bg-[#00f076]" />
-          <span>Sistem Online</span>
+          {loading ? <Loader2 className="size-4 animate-spin" /> : null}
+          {loading ? "Signing in..." : "Sign In"}
+        </button>
+      </form>
+
+      <div className="relative my-5 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-zinc-800" />
         </div>
-      </header>
+        <span className="relative bg-[#14191c] px-3 font-space text-[11px] tracking-widest text-zinc-500 uppercase">
+          or continue with
+        </span>
+      </div>
 
-      {/* Main */}
-      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
-        <div className="flex w-full max-w-[420px] flex-col items-center">
-          {/* Brand presentation */}
-          <div className="mb-7 flex flex-col items-center text-center">
-            <div className="group relative mb-3 flex size-12 items-center justify-center rounded-xl border border-[#283136] bg-[#161b1e] shadow-inner">
-              <div className="absolute inset-0 rounded-xl bg-[#00f076]/10 blur-sm transition-all duration-200 group-hover:bg-[#00f076]/20" />
-              <Image
-                src="/logo.png"
-                alt="Stash"
-                width={24}
-                height={24}
-                className="relative z-10 size-6"
-                priority
-              />
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-white">
-              Stash App
-            </h1>
-          </div>
+      <GoogleButton loading={googleLoading} onClick={handleGoogleLogin} />
 
-          {/* Auth card */}
-          <section className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[rgba(24,30,34,0.88)] to-[rgba(18,23,26,0.94)] p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md sm:p-8">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#00f076]/40 to-transparent" />
-
-            <div className="mb-6 text-center">
-              <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">
-                Selamat Datang
-              </h2>
-              <p className="mt-1.5 font-jakarta text-xs leading-relaxed text-zinc-400 sm:text-sm">
-                Masuk untuk mulai mencatat dan mengelola keuanganmu tanpa
-                ribet.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                type="button"
-                className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-medium text-zinc-900 shadow-sm transition-all duration-150 hover:bg-zinc-100 hover:shadow-[0_0_24px_-4px_rgba(0,240,118,0.22)] focus:outline-none focus:ring-2 focus:ring-[#00f076] active:scale-[0.99] disabled:pointer-events-none disabled:opacity-90"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="size-4 shrink-0 animate-spin text-zinc-900" />
-                    <span>Menghubungkan ke Google...</span>
-                  </>
-                ) : (
-                  <>
-                    <GoogleIcon className="size-4 shrink-0" />
-                    <span>Lanjutkan dengan Google</span>
-                  </>
-                )}
-              </button>
-
-              <div className="relative flex items-center justify-center py-2">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-zinc-800" />
-                </div>
-                <span className="relative bg-[#171c1f] px-3 font-space text-[11px] uppercase tracking-widest text-zinc-500">
-                  atau
-                </span>
-              </div>
-
-              <button
-                onClick={() => toast.info("Mode demo segera hadir")}
-                type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#283136] bg-[#111517]/80 px-4 py-2.5 text-xs font-medium text-zinc-300 transition-colors duration-150 hover:bg-[#20272b] hover:text-white"
-              >
-                <Eye className="size-3.5 text-[#00f076]" />
-                <span>Coba Versi Demo (Tanpa Akun)</span>
-              </button>
-            </div>
-
-            <div className="mt-6 border-t border-zinc-800/80 pt-4 text-center">
-              <a
-                href="#"
-                className="text-xs text-zinc-400 transition-colors hover:text-[#00f076]"
-              >
-                Kendala saat masuk akun? Hubungi Bantuan
-              </a>
-            </div>
-          </section>
-
-          {/* Terms & security */}
-          <div className="mt-6 max-w-sm space-y-2 text-center">
-            <p className="font-jakarta text-[11px] leading-relaxed text-zinc-400">
-              Dengan masuk, kamu menyetujui{" "}
-              <Link
-                href="/terms"
-                className="underline underline-offset-2 transition-colors hover:text-zinc-200"
-              >
-                Syarat &amp; Ketentuan
-              </Link>{" "}
-              serta{" "}
-              <Link
-                href="/privacy"
-                className="underline underline-offset-2 transition-colors hover:text-zinc-200"
-              >
-                Kebijakan Privasi
-              </Link>{" "}
-              Stash.
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="w-full max-w-[calc(100%-2rem)] rounded-2xl border border-[#1c2225] bg-[#101415] sm:max-w-sm"
+        >
+          <DialogTitle className="font-space text-lg font-bold text-white">
+            Reset password
+          </DialogTitle>
+          <DialogDescription className="text-xs text-slate-400">
+            Enter your account email and we will send you a reset link.
+          </DialogDescription>
+          {forgotSent ? (
+            <p className="rounded-xl border border-[#00f076]/30 bg-[#00f076]/10 px-4 py-3 text-xs leading-relaxed text-[#b2ffbe]">
+              Reset link sent. Please check your inbox and follow the
+              instructions to set a new password.
             </p>
-            <div className="inline-flex items-center gap-1.5 pt-1 font-space text-[11px] text-zinc-400">
-              <ShieldCheck className="size-3.5 text-emerald-400" />
-              <span>Otorisasi aman via Google OAuth 2.0</span>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="w-full px-6 py-4 text-center font-space text-xs text-zinc-400">
-        <p>&copy; {new Date().getFullYear()} Stash App.</p>
-      </footer>
-    </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="forgot-email"
+                  className="text-xs font-medium text-slate-300"
+                >
+                  Email Address
+                </Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className={inputClass}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={forgotLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00f076] px-4 py-2.5 text-sm font-bold text-[#070a0b] transition hover:bg-[#00dc6c] active:scale-[0.99] disabled:pointer-events-none disabled:opacity-70"
+              >
+                {forgotLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : null}
+                {forgotLoading ? "Sending..." : "Send reset link"}
+              </button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    </AuthShell>
   )
 }
 
